@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Chatbot Aljabar Matriks</title>
+
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['\\(', '\\)'], ['$', '$']],
+                displayMath: [['\\[', '\\]'], ['$$', '$$']],
+                processEscapes: true
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #f0f4f8;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .app {
+            width: 100%;
+            max-width: 850px;
+            height: 100vh;
+            max-height: 900px;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin: 12px;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a3a5c, #2b5a8a);
+            color: white;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            min-height: 50px;
+        }
+        .header h1 { font-size:17px; font-weight:600; flex:1; }
+        .header .badge { background:rgba(255,255,255,0.2); padding:2px 10px; border-radius:30px; font-size:11px; font-weight:500; }
+        .header .icon { font-size:22px; }
+        .header .copy-btn {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+        .header .copy-btn:hover { background: rgba(255,255,255,0.3); }
+        .header .copy-btn.copied { background: #2e7d5e; }
+
+        .chat-container {
+            flex:1;
+            overflow-y:auto;
+            padding:12px 12px 6px 12px;
+            display:flex;
+            flex-direction:column;
+            gap:8px;
+            background:#fafcff;
+            scroll-behavior:smooth;
+        }
+        .message {
+            max-width:88%;
+            padding:8px 14px;
+            border-radius:14px;
+            line-height:1.5;
+            font-size:14px;
+            word-wrap:break-word;
+            animation:fadeIn 0.25s ease;
+            position: relative;
+            margin-bottom: 10px;
+        }
+        .message.user { align-self:flex-end; background:#2b5a8a; color:white; border-bottom-right-radius:4px; }
+        .message.bot { align-self:flex-start; background:#e9edf4; color:#1e2a3a; border-bottom-left-radius:4px; }
+        
+        .concept-card {
+            position: relative;
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 6px;
+            border: 1px solid #dde4ec;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .concept-copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #2b5a8a;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+            z-index: 5;
+        }
+        .concept-copy-btn:hover { background: #1a3a5c; }
+        .concept-copy-btn.copied { background: #2e7d5e; }
+
+        .submatrix-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 6px;
+            background: #f4f7fa;
+            border-radius: 8px;
+            border: 1px solid #e0e8f0;
+        }
+        .submatrix-item {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #dcdfe6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            font-size: 12px;
+        }
+
+        .message .latex-block { margin:4px 0; overflow-x:auto; padding:2px 0; }
+        .message .latex-block svg { max-width:100%; height:auto; }
+        .message .error { color:#c0392b; font-weight:500; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+
+        .input-area {
+            border-top:1px solid #dde4ec;
+            padding:8px 12px 12px 12px;
+            background:white;
+            display:flex;
+            gap:8px;
+            flex-shrink:0;
+            align-items:flex-end;
+        }
+        .input-area textarea {
+            flex:1;
+            border:1px solid #ccd7e6;
+            border-radius:20px;
+            padding:8px 14px;
+            font-size:14px;
+            font-family:inherit;
+            resize:none;
+            outline:none;
+            transition:border 0.2s;
+            min-height:38px;
+            max-height:90px;
+            line-height:1.3;
+            background:#f8faff;
+        }
+        .input-area textarea:focus { border-color:#2b5a8a; box-shadow:0 0 0 3px rgba(43,90,138,0.12); }
+        .input-area button {
+            background:#2b5a8a;
+            border:none;
+            color:white;
+            width:40px;
+            height:40px;
+            border-radius:50%;
+            font-size:18px;
+            cursor:pointer;
+            transition:background 0.2s, transform 0.1s;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            flex-shrink:0;
+        }
+        .input-area button:hover { background:#1a3a5c; }
+        .input-area button:active { transform:scale(0.94); }
+
+        .example-hint {
+            padding:5px 12px 8px 12px;
+            background:white;
+            font-size:11px;
+            color:#5a6e84;
+            display:flex;
+            flex-wrap:wrap;
+            gap:4px 8px;
+            border-top:1px solid #edf2f7;
+            flex-shrink:0;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+        .example-hint span {
+            cursor:pointer;
+            color:#2b5a8a;
+            font-weight:500;
+            padding:2px 6px;
+            border-radius:8px;
+            background:#eef4fa;
+            transition:background 0.2s;
+            font-size:11px;
+        }
+        .example-hint span:hover { background:#d6e3f2; }
+
+        @media (max-width:600px) {
+            .app { border-radius:0; margin:0; max-height:none; height:100vh; }
+            .header h1 { font-size:15px; }
+            .message { max-width:94%; font-size:13px; padding:7px 11px; }
+            .input-area textarea { font-size:13px; padding:7px 11px; }
+            .example-hint { font-size:10px; }
+            .header .copy-btn { font-size:10px; padding:3px 8px; }
+        }
+        .chat-container::-webkit-scrollbar { width:3px; }
+        .chat-container::-webkit-scrollbar-track { background:#eef2f7; }
+        .chat-container::-webkit-scrollbar-thumb { background:#b0c4dd; border-radius:4px; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <span class="icon"></span>
+            <h1>Chatbot Aljabar Matriks</h1>
+            <span class="badge">Lengkap + Contoh Soal</span>
+            <button class="copy-btn" id="copySourceBtn"> Copy Source</button>
+        </div>
+
+        <div class="chat-container" id="chatContainer"></div>
+
+        <div class="example-hint">
+            <span onclick="insertExample('lu(A)')">lu(A)</span>
+            <span onclick="insertExample('dekomposisi lu')">dekomposisi lu</span>
+            <span onclick="insertExample('idempotent')">idempotent</span>
+            <span onclick="insertExample('simetri')">simetri</span>
+            <span onclick="insertExample('simetri miring')">simetri miring</span>
+            <span onclick="insertExample('hermitian')">hermitian</span>
+            <span onclick="insertExample('matriks partisi')">matriks partisi</span>
+            <span onclick="insertExample('submatriks(A)')">submatriks(A)</span>
+            <span onclick="insertExample('sifat determinan')">sifat determinan</span>
+            <span onclick="insertExample('sifat invers')">sifat invers</span>
+            <span onclick="insertExample('skalar')">skalar</span>
+            <span onclick="insertExample('identitas')">identitas</span>
+            <span onclick="insertExample('diagonal')">diagonal</span>
+            <span onclick="insertExample('segitiga atas')">segitiga atas</span>
+            <span onclick="insertExample('segitiga bawah')">segitiga bawah</span>
+            <span onclick="insertExample('transpose')">transpose</span>
+            <span onclick="insertExample('invers')">invers</span>
+            <span onclick="insertExample('obe')">obe</span>
+            <span onclick="insertExample('rref')">rref</span>
+            <span onclick="insertExample('aturan cramer')">aturan cramer</span>
+            <span onclick="insertExample('help')">help</span>
+        </div>
+
+        <div class="input-area">
+            <textarea id="userInput" rows="1" placeholder="Ketik ekspresi perhitungan atau konsep aljabar matriks�"></textarea>
+            <button id="sendBtn" aria-label="Kirim"></button>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('copySourceBtn').addEventListener('click', function() {
+            const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+            navigator.clipboard.writeText(html).then(function() {
+                const btn = document.getElementById('copySourceBtn');
+                btn.textContent = ' Copied!';
+                btn.classList.add('copied');
+                setTimeout(function() {
+                    btn.textContent = ' Copy Source';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        });
+
+        function isMatrix(arr) {
+            if (!Array.isArray(arr) || arr.length === 0) return false;
+            for (let i = 0; i < arr.length; i++) {
+                if (!Array.isArray(arr[i])) return false;
+                if (i > 0 && arr[i].length !== arr[0].length) return false;
+            }
+            return true;
+        }
+
+        function cloneMatrix(m) { return m.map(row => [...row]); }
+
+        function cleanZeros(M) {
+            return M.map(row => row.map(v => Math.abs(v) < 1e-10 ? 0 : Number(v.toFixed(6))));
+        }
+
+        function matrixAdd(A, B) {
+            return A.map((row, i) => row.map((val, j) => val + B[i][j]));
+        }
+
+        function matrixSub(A, B) {
+            return A.map((row, i) => row.map((val, j) => val - B[i][j]));
+        }
+
+        function matrixMul(A, B) {
+            const rA = A.length, cA = A[0].length, cB = B[0].length;
+            const C = [];
+            for (let i = 0; i < rA; i++) {
+                C[i] = [];
+                for (let j = 0; j < cB; j++) {
+                    let sum = 0;
+                    for (let k = 0; k < cA; k++) sum += A[i][k] * B[k][j];
+                    C[i][j] = sum;
+                }
+            }
+            return cleanZeros(C);
+        }
+
+        function matrixScalarMul(A, k) { return cleanZeros(A.map(row => row.map(x => x * k))); }
+
+        function matrixTranspose(A) {
+            return A[0].map((_, colIndex) => A.map(row => row[colIndex]));
+        }
+
+        function determinant(A) {
+            const n = A.length;
+            if (n === 1) return A[0][0];
+            if (n === 2) return A[0][0]*A[1][1] - A[0][1]*A[1][0];
+            let det = 0;
+            for (let j = 0; j < n; j++) {
+                const sub = A.slice(1).map(row => row.filter((_, idx) => idx !== j));
+                det += (j % 2 === 0 ? 1 : -1) * A[0][j] * determinant(sub);
+            }
+            return Math.abs(det) < 1e-10 ? 0 : det;
+        }
+
+        function cofactorMatrix(A) {
+            const n = A.length;
+            const C = [];
+            for (let i = 0; i < n; i++) {
+                C[i] = [];
+                for (let j = 0; j < n; j++) {
+                    const sub = A.filter((_, idx) => idx !== i).map(row => row.filter((_, jdx) => jdx !== j));
+                    C[i][j] = ((i + j) % 2 === 0 ? 1 : -1) * determinant(sub);
+                }
+            }
+            return C;
+        }
+
+        function matrixAdjoint(A) {
+            return cleanZeros(matrixTranspose(cofactorMatrix(A)));
+        }
+
+        function matrixInverse(A) {
+            const det = determinant(A);
+            if (Math.abs(det) < 1e-10) throw new Error('Matriks singular (det = 0), tidak memiliki invers.');
+            return matrixScalarMul(matrixAdjoint(A), 1/det);
+        }
+
+        function rowEchelonForm(A) {
+            let M = cloneMatrix(A);
+            const rows = M.length, cols = M[0].length;
+            let pivotRow = 0;
+
+            for (let col = 0; col < cols && pivotRow < rows; col++) {
+                let maxRow = pivotRow;
+                for (let i = pivotRow + 1; i < rows; i++) {
+                    if (Math.abs(M[i][col]) > Math.abs(M[maxRow][col])) maxRow = i;
+                }
+
+                if (Math.abs(M[maxRow][col]) < 1e-10) continue;
+
+                [M[pivotRow], M[maxRow]] = [M[maxRow], M[pivotRow]];
+
+                const pivotVal = M[pivotRow][col];
+                for (let j = col; j < cols; j++) M[pivotRow][j] /= pivotVal;
+
+                for (let i = pivotRow + 1; i < rows; i++) {
+                    const factor = M[i][col];
+                    for (let j = col; j < cols; j++) M[i][j] -= factor * M[pivotRow][j];
+                }
+                pivotRow++;
+            }
+            return cleanZeros(M);
+        }
+
+        function reducedRowEchelonForm(A) {
+            let M = rowEchelonForm(A);
+            const rows = M.length, cols = M[0].length;
+
+            for (let r = rows - 1; r >= 0; r--) {
+                let leadCol = -1;
+                for (let c = 0; c < cols; c++) {
+                    if (Math.abs(M[r][c] - 1) < 1e-10) {
+                        leadCol = c;
+                        break;
+                    }
+                }
+
+                if (leadCol !== -1) {
+                    for (let i = r - 1; i >= 0; i--) {
+                        const factor = M[i][leadCol];
+                        for (let j = leadCol; j < cols; j++) M[i][j] -= factor * M[r][j];
+                    }
+                }
+            }
+            return cleanZeros(M);
+        }
+
+        function matrixRank(A) {
+            const rref = reducedRowEchelonForm(A);
+            let rank = 0;
+            for (let r = 0; r < rref.length; r++) {
+                if (rref[r].some(val => Math.abs(val) > 1e-10)) rank++;
+            }
+            return rank;
+        }
+
+        function normalForm(A) {
+            const r = matrixRank(A);
+            const rows = A.length, cols = A[0].length;
+            let N = [];
+            for (let i = 0; i < rows; i++) {
+                N[i] = [];
+                for (let j = 0; j < cols; j++) {
+                    N[i][j] = (i < r && j < r && i === j) ? 1 : 0;
+                }
+            }
+            return N;
+        }
+
+        function luDecomposition(A) {
+            if (!isMatrix(A) || A.length !== A[0].length) {
+                throw new Error('Dekomposisi LU membutuhkan matriks persegi (n x n).');
+            }
+            const n = A.length;
+            let L = Array.from({length: n}, () => Array(n).fill(0));
+            let U = Array.from({length: n}, () => Array(n).fill(0));
+
+            for (let i = 0; i < n; i++) {
+                for (let k = i; k < n; k++) {
+                    let sum = 0;
+                    for (let j = 0; j < i; j++) sum += (L[i][j] * U[j][k]);
+                    U[i][k] = A[i][k] - sum;
+                }
+
+                for (let k = i; k < n; k++) {
+                    if (i === k) L[i][i] = 1;
+                    else {
+                        let sum = 0;
+                        for (let j = 0; j < i; j++) sum += (L[k][j] * U[j][i]);
+                        if (Math.abs(U[i][i]) < 1e-10) {
+                            throw new Error('Dekomposisi LU tanpa permutasi gagal karena pivot 0. Diperlukan pertukaran baris (PLU).');
+                        }
+                        L[k][i] = (A[k][i] - sum) / U[i][i];
+                    }
+                }
+            }
+            return { L: cleanZeros(L), U: cleanZeros(U), isLU: true };
+        }
+
+        function getSubsets(array) {
+            const result = [[]];
+            for (const value of array) {
+                const length = result.length;
+                for (let i = 0; i < length; i++) {
+                    result.push([...result[i], value]);
+                }
+            }
+            return result.filter(set => set.length > 0);
+        }
+
+        function generateAllSubmatrices(A) {
+            const m = A.length;
+            const n = A[0].length;
+            const rowIndices = Array.from({length: m}, (_, i) => i);
+            const colIndices = Array.from({length: n}, (_, i) => i);
+            const rowSubsets = getSubsets(rowIndices);
+            const colSubsets = getSubsets(colIndices);
+            const submatrices = [];
+
+            for (const rows of rowSubsets) {
+                for (const cols of colSubsets) {
+                    const sub = rows.map(r => cols.map(c => A[r][c]));
+                    submatrices.push({
+                        rows: rows.map(r => r + 1),
+                        cols: cols.map(c => c + 1),
+                        matrix: sub
+                    });
+                }
+            }
+
+            submatrices.sort((a, b) => {
+                const sizeA = a.matrix.length * a.matrix[0].length;
+                const sizeB = b.matrix.length * b.matrix[0].length;
+                return sizeB - sizeA;
+            });
+
+            return {
+                totalRows: m,
+                totalCols: n,
+                count: (Math.pow(2, m) - 1) * (Math.pow(2, n) - 1),
+                list: submatrices
+            };
+        }
+
+        function parseMatrixLiteral(str) {
+            let clean = str.replace(/\s/g, '').replace(/["']/g, '');
+            if (!clean.startsWith('[[') || !clean.endsWith(']')) {
+                throw new Error('Format matriks harus [[a,b],[c,d]]');
+            }
+            let inner = clean.slice(1, -1);
+            let rows = [];
+            let current = '';
+            let depth = 0;
+            for (let i = 0; i < inner.length; i++) {
+                const ch = inner[i];
+                if (ch === '[') {
+                    depth++;
+                    if (depth > 1) current += ch;
+                } else if (ch === ']') {
+                    depth--;
+                    if (depth === 0) { rows.push(current); current = ''; }
+                    else current += ch;
+                } else if (depth >= 1) { current += ch; }
+            }
+            const result = rows.map(r => r.split(',').filter(s => s.trim() !== '').map(s => {
+                const num = parseFloat(s.trim());
+                if (isNaN(num)) throw new Error('Bukan angka: "' + s + '"');
+                return num;
+            }));
+            return result;
+        }
+
+        function tokenize(expr) {
+            const tokens = [];
+            let i = 0;
+            while (i < expr.length) {
+                const ch = expr[i];
+                if (/\s/.test(ch)) { i++; continue; }
+                if (['(', ')', '+', '-', '*'].includes(ch)) {
+                    tokens.push({ type: 'operator', value: ch });
+                    i++; continue;
+                }
+                if (ch === "'") {
+                    tokens.push({ type: 'postfix', value: 'transpose' });
+                    i++; continue;
+                }
+                if (/\d/.test(ch) || (ch === '-' && i+1 < expr.length && /\d/.test(expr[i+1]))) {
+                    let num = '';
+                    if (ch === '-') { num += '-'; i++; }
+                    while (i < expr.length && /[\d.]/.test(expr[i])) { num += expr[i]; i++; }
+                    tokens.push({ type: 'number', value: parseFloat(num) });
+                    continue;
+                }
+                if (/[a-zA-Z_]/.test(ch)) {
+                    let id = '';
+                    while (i < expr.length && /[a-zA-Z0-9_]/.test(expr[i])) { id += expr[i]; i++; }
+                    if (i < expr.length && expr[i] === '(') {
+                        tokens.push({ type: 'function', value: id });
+                        continue;
+                    }
+                    tokens.push({ type: 'identifier', value: id });
+                    continue;
+                }
+                if (ch === '[') {
+                    let matrixStr = '';
+                    let bracketCount = 0;
+                    while (i < expr.length) {
+                        const c = expr[i];
+                        matrixStr += c;
+                        if (c === '[') bracketCount++;
+                        else if (c === ']') bracketCount--;
+                        i++;
+                        if (bracketCount === 0) break;
+                    }
+                    tokens.push({ type: 'matrix_literal', value: matrixStr });
+                    continue;
+                }
+                throw new Error('Karakter tidak dikenal: "' + ch + '"');
+            }
+            return tokens;
+        }
+
+        function shuntingYard(tokens) {
+            const output = [], ops = [];
+            const precedence = { '+': 1, '-': 1, '*': 2 };
+
+            for (let i = 0; i < tokens.length; i++) {
+                const tok = tokens[i];
+                if (['number', 'matrix_literal', 'identifier'].includes(tok.type)) {
+                    output.push(tok);
+                    if (i+1 < tokens.length && tokens[i+1].type === 'postfix') {
+                        output.push({ type: 'unary', value: tokens[i+1].value });
+                        i++;
+                    }
+                } else if (tok.type === 'function') {
+                    ops.push(tok);
+                } else if (tok.type === 'operator' && tok.value === '(') {
+                    ops.push(tok);
+                } else if (tok.type === 'operator' && tok.value === ')') {
+                    while (ops.length > 0 && !(ops[ops.length-1].type === 'operator' && ops[ops.length-1].value === '(')) {
+                        output.push(ops.pop());
+                    }
+                    ops.pop();
+                    if (ops.length > 0 && ops[ops.length-1].type === 'function') {
+                        output.push(ops.pop());
+                    }
+                } else if (tok.type === 'operator') {
+                    while (ops.length > 0 && ops[ops.length-1].type === 'operator' &&
+                           ops[ops.length-1].value !== '(' &&
+                           precedence[ops[ops.length-1].value] >= precedence[tok.value]) {
+                        output.push(ops.pop());
+                    }
+                    ops.push(tok);
+                }
+            }
+            while (ops.length > 0) output.push(ops.pop());
+            return output;
+        }
+
+        function evaluateRPN(rpn, vars) {
+            const stack = [];
+            for (const item of rpn) {
+                if (item.type === 'number') stack.push(item.value);
+                else if (item.type === 'matrix_literal') stack.push(parseMatrixLiteral(item.value));
+                else if (item.type === 'identifier') {
+                    if (vars[item.value] === undefined) throw new Error('Variabel "' + item.value + '" belum ditentukan.');
+                    stack.push(vars[item.value]);
+                } else if (item.type === 'function' || item.type === 'unary') {
+                    const operand = stack.pop();
+                    const fn = item.value;
+                    if (fn === 'transpose') stack.push(matrixTranspose(operand));
+                    else if (fn === 'det') stack.push(determinant(operand));
+                    else if (fn === 'inv') stack.push(matrixInverse(operand));
+                    else if (fn === 'rank') stack.push(matrixRank(operand));
+                    else if (fn === 'adj') stack.push(matrixAdjoint(operand));
+                    else if (fn === 'ref') stack.push(rowEchelonForm(operand));
+                    else if (fn === 'rref') stack.push(reducedRowEchelonForm(operand));
+                    else if (fn === 'normal') stack.push(normalForm(operand));
+                    else if (fn === 'submatriks') stack.push(generateAllSubmatrices(operand));
+                    else if (fn === 'lu') stack.push(luDecomposition(operand));
+                } else if (item.type === 'operator') {
+                    const b = stack.pop(), a = stack.pop();
+                    if (item.value === '+') stack.push(matrixAdd(a, b));
+                    else if (item.value === '-') stack.push(matrixSub(a, b));
+                    else if (item.value === '*') {
+                        if (typeof a === 'number') stack.push(matrixScalarMul(b, a));
+                        else if (typeof b === 'number') stack.push(matrixScalarMul(a, b));
+                        else stack.push(matrixMul(a, b));
+                    }
+                }
+            }
+            return stack[0];
+        }
+
+        function parseAndEvaluate(expr, vars) {
+            try {
+                return evaluateRPN(shuntingYard(tokenize(expr)), vars);
+            } catch (e) {
+                try { return parseMatrixLiteral(expr); }
+                catch (e2) { throw e; }
+            }
+        }
+
+        function normalize(text) {
+            return text.toLowerCase().replace(/[.,!?;:()"']/g, '').replace(/\s+/g, ' ').trim();
+        }
+
+        const conceptData = [
+            {
+                keywords: ['cramer', 'aturan cramer'],
+                answer: `<b>Aturan Cramer (Cramer's Rule)</b><br><br>
+<b>Penjelasan Verbal Lanjutan:</b><br>
+Aturan Cramer adalah metode penyelesaian Sistem Persamaan Linier (SPL) dengan matriks koefisien berbentuk persegi ($n \\times n$) menggunakan determinan. Nilai variabel $x_i$ didapatkan dengan mengganti kolom ke-$i$ pada matriks utama $A$ dengan vektor konstanta $b$, lalu membagi determinannya dengan determinan matriks $A$. Persyaratan utamanya adalah determinan matriks utama tidak boleh nol ($\det(A) \\neq 0$).<br><br>
+<b>Rumus Umum:</b>
+\\[ x_i = \\frac{\\det(A_i)}{\\det(A)} \\]<br>
+<b>Contoh Soal Konkret & Langkah Penyelesaian:</b><br>
+Selesaikan sistem persamaan linier berikut:
+\\[ \\begin{cases} 2x + 3y = 8 \\\\ 1x + 4y = 9 \\end{cases} \\]<br>
+1. Bentuk matriks koefisien $A$ dan vektor konstanta $b$:
+\\[ A = \\begin{bmatrix} 2 & 3 \\\\ 1 & 4 \\end{bmatrix}, \\quad b = \\begin{bmatrix} 8 \\\\ 9 \\end{bmatrix} \\]<br>
+2. Hitung determinan utama $\det(A)$:
+\\[ \\det(A) = (2)(4) - (3)(1) = 8 - 3 = 5 \\]<br>
+3. Buat matriks $A_x$ (ganti kolom ke-1 dengan $b$) dan hitung $\det(A_x)$:
+\\[ A_x = \\begin{bmatrix} 8 & 3 \\\\ 9 & 4 \\end{bmatrix} \\implies \\det(A_x) = (8)(4) - (3)(9) = 32 - 27 = 5 \\]<br>
+4. Buat matriks $A_y$ (ganti kolom ke-2 dengan $b$) dan hitung $\det(A_y)$:
+\\[ A_y = \\begin{bmatrix} 2 & 8 \\\\ 1 & 9 \\end{bmatrix} \\implies \\det(A_y) = (2)(9) - (8)(1) = 18 - 8 = 10 \\]<br>
+5. Hitung variabel $x$ dan $y$:
+\\[ x = \\frac{\\det(A_x)}{\\det(A)} = \\frac{5}{5} = 1, \\quad y = \\frac{\\det(A_y)}{\\det(A)} = \\frac{10}{5} = 2 \\]<br>
+<b>Hasil Akhir:</b> $x = 1$ dan $y = 2$.`
+            },
+            {
+                keywords: ['invers', 'matriks invers', 'invers matriks'],
+                answer: `<b>Invers Matriks (Matrix Inverse)</b><br><br>
+<b>Penjelasan Verbal Lanjutan:</b><br>
+Invers dari suatu matriks persegi $A$ (dinotasikan $A^{-1}$) adalah matriks yang jika dikalikan dengan matriks $A$ akan menghasilkan matriks identitas ($I$). Matriks yang memiliki invers dinamakan matriks *non-singular* ($\det(A) \\neq 0$). Jika determinannya nol, matriks dinamakan *singular* dan tidak memiliki invers.<br><br>
+<b>Rumus Matriks $2 \\times 2$:</b>
+\\[ A^{-1} = \\frac{1}{ad - bc} \\begin{bmatrix} d & -b \\\\ -c & a \\end{bmatrix} \\]<br>
+<b>Contoh Soal Konkret & Langkah Penyelesaian:</b><br>
+Tentukan invers dari matriks $A = \\begin{bmatrix} 4 & 7 \\\\ 2 & 6 \\end{bmatrix}$.<br><br>
+1. Hitung determinan $\det(A)$:
+\\[ \\det(A) = (4)(6) - (7)(2) = 24 - 14 = 10 \\]<br>
+2. Tentukan matriks Adjoin $\\text{adj}(A)$:
+\\[ \\text{adj}(A) = \\begin{bmatrix} 6 & -7 \\\\ -2 & 4 \\end{bmatrix} \\]<br>
+3. Masukkan ke rumus invers:
+\\[ A^{-1} = \\frac{1}{10} \\begin{bmatrix} 6 & -7 \\\\ -2 & 4 \\end{bmatrix} = \\begin{bmatrix} 0,6 & -0,7 \\\\ -0,2 & 0,4 \\end{bmatrix} \\]<br>
+4. Verifikasi ($A \\cdot A^{-1} = I$):
+\\[ \\begin{bmatrix} 4 & 7 \\\\ 2 & 6 \\end{bmatrix} \\begin{bmatrix} 0,6 & -0,7 \\\\ -0,2 & 0,4 \\end{bmatrix} = \\begin{bmatrix} 2,4 - 1,4 & -2,8 + 2,8 \\\\ 1,2 - 1,2 & -1,4 + 2,4 \\end{bmatrix} = \\begin{bmatrix} 1 & 0 \\\\ 0 & 1 \\end{bmatrix} \\]`
+            },
+            {
+                keywords: ['lu', 'dekomposisi lu', 'lu decomposition', 'faktorisasi lu', 'lu(a)'],
+                answer: `<b>Dekomposisi Matriks LU (Faktorisasi LU)</b><br><br>
+<b>Penjelasan Verbal Lanjutan:</b><br>
+Dekomposisi LU memfaktorkan matriks persegi $A$ menjadi perkalian dua matriks: matriks segitiga bawah $L$ (*Lower triangular*) dengan elemen diagonal bernilai 1, dan matriks segitiga atas $U$ (*Upper triangular*). Metode ini sangat praktis untuk menyelesaikan sistem persamaan linier $Ax = b$ tanpa perlu menghitung invers.<br><br>
+<b>Bentuk Umum:</b>
+\\[ A = L \\cdot U = \\begin{bmatrix} 1 & 0 \\\\ l_{21} & 1 \\end{bmatrix} \\begin{bmatrix} u_{11} & u_{12} \\\\ 0 & u_{22} \\end{bmatrix} \\]<br>
+<b>Contoh Soal Konkret & Langkah Penyelesaian:</b><br>
+Diberikan matriks $A = \\begin{bmatrix} 2 & 1 \\\\ 8 & 7 \\end{bmatrix}$. Faktorkan menjadi $A = LU$.<br><br>
+1. Tentukan elemen $U$ baris pertama:
+\\[ u_{11} = a_{11} = 2, \\quad u_{12} = a_{12} = 1 \\]<br>
+2. Hitung elemen $L$ kolom pertama:
+\\[ l_{21} = \\frac{a_{21}}{u_{11}} = \\frac{8}{2} = 4 \\]<br>
+3. Hitung elemen $U$ baris kedua:
+\\[ u_{22} = a_{22} - (l_{21} \\cdot u_{12}) = 7 - (4 \\cdot 1) = 3 \\]<br>
+4. Didapatkan matriks $L$ dan $U$:
+\\[ L = \\begin{bmatrix} 1 & 0 \\\\ 4 & 1 \\end{bmatrix}, \\quad U = \\begin{bmatrix} 2 & 1 \\\\ 0 & 3 \\end{bmatrix} \\]<br>
+<b>Uji Perkalian $L \\times U$:</b>
+\\[ \\begin{bmatrix} 1 & 0 \\\\ 4 & 1 \\end{bmatrix} \\begin{bmatrix} 2 & 1 \\\\ 0 & 3 \\end{bmatrix} = \\begin{bmatrix} 2 & 1 \\\\ 8 & 7 \\end{bmatrix} = A \\]`
+            },
+            {
+                keywords: ['idempoten', 'idempotent', 'matriks idempotence', 'matriks idempotent', 'matriks idempoten'],
+                answer: `<b>Matriks Idempoten (Idempotent Matrix)</b><br><br>
+<b>Penjelasan Verbal Lanjutan:</b><br>
+Matriks idempoten adalah matriks persegi $A$ yang apabila dikalikan dengan dirinya sendiri menghasilkan matriks yang sama persis ($A^2 = A$). Konsekuensinya, dipangkatkan berapa pun hasilnya tetap matriks $A$ ($A^n = A$).<br><br>
+<b>Syarat Utama:</b>
+\\[ A^2 = A \\cdot A = A \\]<br>
+<b>Contoh Soal Konkret & Uji Kebenaran:</b><br>
+Periksa apakah matriks $A = \\begin{bmatrix} 3 & -6 \\\\ 1 & -2 \\end{bmatrix}$ idempoten.<br><br>
+Langkah hitung $A^2$:
+\\[ A^2 = \\begin{bmatrix} 3 & -6 \\\\ 1 & -2 \\end{bmatrix} \\begin{bmatrix} 3 & -6 \\\\ 1 & -2 \\end{bmatrix} \\]
+\\[ = \\begin{bmatrix} (3)(3) + (-6)(1) & (3)(-6) + (-6)(-2) \\\\ (1)(3) + (-2)(1) & (1)(-6) + (-2)(-2) \\end{bmatrix} \\]
+\\[ = \\begin{bmatrix} 9 - 6 & -18 + 12 \\\\ 3 - 2 & -6 + 4 \\end{bmatrix} = \\begin{bmatrix} 3 & -6 \\\\ 1 & -2 \\end{bmatrix} = A \\]<br>
+<b>Kesimpulan:</b> Terbukti bahwa matriks $A$ adalah **Idempoten**.`
+            },
+            {
+                keywords: ['simetri miring', 'skew symmetric', 'skew-symmetric', 'simetris miring', 'anti simetri', 'antisimetri'],
+                answer: `<b>Matriks Simetri Miring (Skew-Symmetric Matrix)</b><br><br>
+<b>Penjelasan Verbal Lanjutan:</b><br>
+Matriks simetri miring (anti-simetris) adalah matriks persegi $A$ yang hasil transpose-nya sama dengan negatif dari matriks tersebut ($A^T = -A$). Syarat mutlak matriks ini adalah elemen diagonal utamanya harus nol ($a_{ii} = 0$).<br><br>
+<b>Syarat Utama:</b>
+\\[ A^T = -A \\quad \\text{atau} \\quad a_{ij} = -a_{ji} \\]<br>
+<b>Contoh Soal Konkret & Pembuktian:</b><br>
+Diberikan matriks $A$:
+\\[ A = \\begin{bmatrix} 0 & 2 & -5 \\\\ -2 & 0 & 3 \\\\ 5 & -3 & 0 \\end{bmatrix} \\]<br>
+1. Transpose-kan matriks $A$ ($A^T$):
+\\[ A^T = \\begin{bmatrix} 0 & -2 & 5 \\\\ 2 & 0 & -3 \\\\ -5 & 3 & 0 \\end{bmatrix} \\]<br>
+2. Kalikan $-1$ ke matriks $A$ ($-A$):
+\\[ -A = -1 \\cdot \\begin{bmatrix} 0 & 2 & -5 \\\\ -2 & 0 & 3 \\\\ 5 & -3 & 0 \\end{bmatrix} = \\begin{bmatrix} 0 & -2 & 5 \\\\ 2 & 0 & -3 \\\\ -5 & 3 & 0 \\end{bmatrix} \\]<br>
+<b>Kesimpulan:</b> Karena $A^T = -A$, maka matriks ini terbukti **Simetri Miring**.`
+            },
+            {
+                keywords: ['simetri', 'simetris', 'symmetric', 'matriks simetri'],
+                answer: `<b>Matriks Simetri (Symmetric Matrix)</b><br><br>
+<b>Penjelasan Verbal Lanjutan:</b><br>
+Matriks simetri adalah matriks persegi $A$ yang nilainya sama dengan hasil transpose-nya ($A^T = A$). Elemen-elemen matriks saling cermin terhadap diagonal utama ($a_{ij} = a_{ji}$).<br><br>
+<b>Syarat Utama:</b>
+\\[ A^T = A \\]<br>
+<b>Contoh Soal Konkret & Pembuktian:</b><br>
+Diberikan matriks $A$:
+\\[ A = \\begin{bmatrix} 1 & 7 & 3 \\\\ 7 & 4 & -5 \\\\ 3 & -5 & 2 \\end{bmatrix} \\]<br>
+Tukarkan baris menjadi kolom (Transpose):
+\\[ A^T = \\begin{bmatrix} 1 & 7 & 3 \\\\ 7 & 4 & -5 \\\\ 3 & -5 & 2 \\end{bmatrix} \\]<br>
+<b>Kesimpulan:</b> Karena $A^T = A$, maka matriks ini terbukti **Simetri**.`
+            },
+            {
+                keywords: ['hermitian', 'hermitian matrix', 'matriks hermitian'],
+                answer: `<b>Matriks Hermitian (Hermitian Matrix)</b><br><br>
+<b>Penjelasan Verbal Lanjutan:</b><br>
+Matriks Hermitian adalah matriks persegi dengan entri bilangan kompleks yang bernilai sama dengan *conjugate transpose*-nya. Elemen diagonal utama pada matriks Hermitian harus selalu bernilai bilangan real.<br><br>
+<b>Syarat Utama:</b>
+\\[ A^H = (\\bar{A})^T = A \\]<br>
+<b>Contoh Soal Konkret & Pembuktian:</b><br>
+Diberikan matriks kompleks $A = \\begin{bmatrix} 2 & 3+i \\\\ 3-i & 5 \\end{bmatrix}$.<br><br>
+1. Hitung konjugat kompleks $\\bar{A}$ (ubah tanda bagian imajiner $i$):
+\\[ \\bar{A} = \\begin{bmatrix} 2 & 3-i \\\\ 3+i & 5 \\end{bmatrix} \\]<br>
+2. Transpose-kan $\\bar{A}$ untuk mendapat $A^H$:
+\\[ A^H = (\\bar{A})^T = \\begin{bmatrix} 2 & 3+i \\\\ 3-i & 5 \\end{bmatrix} \\]<br>
+<b>Kesimpulan:</b> Karena $A^H = A$, matriks ini terbukti **Hermitian**.`
+            },
+            {
+                keywords: ['matriks partisi', 'partisi matriks', 'block matrix', 'partisi'],
+                answer: `<b>Matriks Partisi (Matriks Blok)</b><br><br>
+<b>Penjelasan Verbal Lanjutan:</b><br>
+Matriks partisi adalah matriks yang dipecah menjadi submatriks yang lebih kecil (blok) dengan membuat sekat garis horizontal dan vertikal. Penyusunan ini mempermudah operasi perkalian matriks berukuran raksasa.<br><br>
+<b>Contoh Soal Konkret:</b><br>
+Diberikan matriks $A$ berukuran $3 \\times 3$:
+\\[ A = \\begin{bmatrix} 1 & 2 & 3 \\\\ 4 & 5 & 6 \\\\ 7 & 8 & 9 \\end{bmatrix} \\]<br>
+Partisi matriks $A$ menjadi 4 blok:
+\\[ A = \\begin{bmatrix} A_{11} & A_{12} \\\\ A_{21} & A_{22} \\end{bmatrix} = \\begin{bmatrix} 1 & 2 & \\vert & 3 \\\\ 4 & 5 & \\vert & 6 \\\\ \\hline 7 & 8 & \\vert & 9 \\end{bmatrix} \\]<br>
+Submatriks blok hasil partisinya adalah:
+\\[ A_{11} = \\begin{bmatrix} 1 & 2 \\\\ 4 & 5 \\end{bmatrix}, \\quad A_{12} = \\begin{bmatrix} 3 \\\\ 6 \\end{bmatrix}, \\quad A_{21} = \\begin{bmatrix} 7 & 8 \\end{bmatrix}, \\quad A_{22} = \\begin{bmatrix} 9 \\end{bmatrix} \\]`
+            },
+            {
+                keywords: ['sifat determinan', 'sifat-sifat determinan', 'sifat det', 'determinan sifat'],
+                answer: `<b>Sifat-Sifat Determinan Matriks</b><br><br>
+<b>Rangkuman Sifat Utama & Contoh:</b><br><br>
+1. **Determinan Transpose:** $\det(A^T) = \det(A)$<br>
+2. **Determinan Perkalian:** $\det(AB) = \det(A) \\cdot \det(B)$<br>
+3. **Determinan Invers:** $\det(A^{-1}) = \\frac{1}{\det(A)}$<br>
+4. **Perkalian Skalar:** Untuk matriks $n \\times n$, $\det(kA) = k^n \\cdot \det(A)$<br>
+5. **Baris/Kolom Nol:** Jika ada 1 baris/kolom bernilai 0 semua, maka $\det(A) = 0$.<br>
+6. **Dua Baris/Kolom Identik:** Jika 2 baris/kolom sama, maka $\det(A) = 0$.<br>
+7. **Matriks Segitiga / Diagonal:** $\det(A)$ adalah perkalian entri diagonal utama.<br><br>
+<b>Contoh Soal Konkret Sifat Segitiga Atas:</b>
+\\[ A = \\begin{bmatrix} 3 & 5 & 2 \\\\ 0 & 4 & 1 \\\\ 0 & 0 & 2 \\end{bmatrix} \\implies \\det(A) = 3 \\times 4 \\times 2 = 24 \\]`
+            },
+            {
+                keywords: ['sifat invers', 'sifat-sifat invers', 'sifat matriks invers', 'sifat inv'],
+                answer: `<b>Sifat-Sifat Matriks Invers</b><br><br>
+<b>Rangkuman Sifat Utama & Contoh Aplikasi:</b><br><br>
+1. **Invers Ganda:** $(A^{-1})^{-1} = A$<br>
+2. **Invers Perkalian:** $(AB)^{-1} = B^{-1} A^{-1}$ *(urutan balik)*<br>
+3. **Invers Transpose:** $(A^T)^{-1} = (A^{-1})^T$<br>
+4. **Invers Skalar:** $(kA)^{-1} = \\frac{1}{k} A^{-1}$<br>
+5. **Perkalian Identitas:** $A A^{-1} = A^{-1} A = I$<br><br>
+<b>Contoh Aplikasi Sifat Terbalik $(AB)^{-1} = B^{-1} A^{-1}$:</b><br>
+Diketahui $A^{-1} = \\begin{bmatrix} 1 & 2 \\\\ 0 & 1 \\end{bmatrix}$ dan $B^{-1} = \\begin{bmatrix} 3 & 0 \\\\ 1 & 2 \\end{bmatrix}$.<br>
+Maka $(AB)^{-1}$ dihitung dengan $B^{-1} A^{-1}$:
+\\[ (AB)^{-1} = \\begin{bmatrix} 3 & 0 \\\\ 1 & 2 \\end{bmatrix} \\begin{bmatrix} 1 & 2 \\\\ 0 & 1 \\end{bmatrix} = \\begin{bmatrix} 3 & 6 \\\\ 1 & 4 \\end{bmatrix} \\]`
+            },
+            {
+                keywords: ['skalar', 'matriks skalar', 'scalar matrix'],
+                answer: `<b>Matriks Skalar</b><br><br>
+<b>Penjelasan Verbal Lanjutan:</b><br>
+Matriks skalar adalah bentuk khusus dari matriks diagonal di mana semua angka pada diagonal utama bernilai sama persis ($k$), dan elemen di luar diagonal utama bernilai 0.<br><br>
+<b>Bentuk Umum & Contoh:</b>
+\\[ S = \\begin{bmatrix} k & 0 & 0 \\\\ 0 & k & 0 \\\\ 0 & 0 & k \\end{bmatrix} \\]<br>
+Contoh konkret dengan $k = 5$:
+\\[ S = \\begin{bmatrix} 5 & 0 & 0 \\\\ 0 & 5 & 0 \\\\ 0 & 0 & 5 \\end{bmatrix} = 5 \\cdot \\begin{bmatrix} 1 & 0 & 0 \\\\ 0 & 1 & 0 \\\\ 0 & 0 & 1 \\end{bmatrix} = 5I \\]`
+            },
+            {
+                keywords: ['identitas', 'matriks identitas', 'identity matrix'],
+                answer: `<b>Matriks Identitas</b><br><br>
+<b>Penjelasan Verbal Lanjutan:</b><br>
+Matriks identitas ($I$) adalah matriks persegi yang elemen diagonal utamanya bernilai 1 dan elemen lainnya 0. Bertindak sebagai elemen netral perkalian matriks ($A \\cdot I = I \\cdot A = A$).<br><br>
+<b>Contoh Konkret Ukuran $3 \\times 3$:</b>
+\\[ I_3 = \\begin{bmatrix} 1 & 0 & 0 \\\\ 0 & 1 & 0 \\\\ 0 & 0 & 1 \\end{bmatrix} \\]<br>
+Uji perkalian dengan matriks $A = \\begin{bmatrix} 2 & 4 \\\\ 1 & 3 \\end{bmatrix}$:
+\\[ A \\cdot I = \\begin{bmatrix} 2 & 4 \\\\ 1 & 3 \\end{bmatrix} \\begin{bmatrix} 1 & 0 \\\\ 0 & 1 \\end{bmatrix} = \\begin{bmatrix} 2 & 4 \\\\ 1 & 3 \\end{bmatrix} = A \\]`
+            },
+            {
+                keywords: ['diagonal', 'matriks diagonal'],
+                answer: `<b>Matriks Diagonal</b><br><br>
+<b>Penjelasan Verbal Lanjutan:</b><br>
+Matriks diagonal adalah matriks persegi di mana semua entri di luar diagonal utama adalah 0 ($a_{ij} = 0$ untuk $i \\neq j$).<br><br>
+<b>Contoh Konkret:</b>
+\\[ D = \\begin{bmatrix} 4 & 0 & 0 \\\\ 0 & -2 & 0 \\\\ 0 & 0 & 7 \\end{bmatrix} \\]<br>
+Sifat utama matriks diagonal: perpangkatan $D^n$ dilakukan dengan cukup memangkatkan elemen diagonalnya saja:
+\\[ D^2 = \\begin{bmatrix} 4^2 & 0 & 0 \\\\ 0 & (-2)^2 & 0 \\\\ 0 & 0 & 7^2 \\end{bmatrix} = \\begin{bmatrix} 16 & 0 & 0 \\\\ 0 & 4 & 0 \\\\ 0 & 0 & 49 \\end{bmatrix} \\]`
+            },
+            {
+                keywords: ['segitiga atas', 'upper triangular'],
+                answer: `<b>Matriks Segitiga Atas (Upper Triangular Matrix)</b><br><br>
+<b>Penjelasan Verbal Lanjutan:</b><br>
+Matriks segitiga atas adalah matriks persegi yang seluruh elemen di bawah diagonal utamanya bernilai nol ($a_{ij} = 0$ untuk $i > j$).<br><br>
+<b>Contoh Konkret:</b>
+\\[ U = \\begin{bmatrix} 3 & 5 & -1 \\\\ 0 & 2 & 4 \\\\ 0 & 0 & 6 \\end{bmatrix} \\]`
+            },
+            {
+                keywords: ['segitiga bawah', 'lower triangular'],
+                answer: `<b>Matriks Segitiga Bawah (Lower Triangular Matrix)</b><br><br>
+<b>Penjelasan Verbal Lanjutan:</b><br>
+Matriks segitiga bawah adalah matriks persegi yang seluruh elemen di atas diagonal utamanya bernilai nol ($a_{ij} = 0$ untuk $i < j$).<br><br>
+<b>Contoh Konkret:</b>
+\\[ L = \\begin{bmatrix} 4 & 0 & 0 \\\\ 1 & -3 & 0 \\\\ 5 & 2 & 8 \\end{bmatrix} \\]`
+            },
+            {
+                keywords: ['submatriks', 'submatrik'],
+                answer: `<b>Submatriks</b><br><br>
+<b>Penjelasan Verbal Lanjutan:</b><br>
+Submatriks adalah matriks yang dibentuk dengan cara menghilangkan baris dan/atau kolom tertentu dari matriks utama.<br><br>
+<b>Contoh Soal Konkret:</b><br>
+Diberikan matriks $A$:
+\\[ A = \\begin{bmatrix} 1 & 2 & 3 \\\\ 4 & 5 & 6 \\\\ 7 & 8 & 9 \\end{bmatrix} \\]<br>
+Hapus **baris ke-1** dan **kolom ke-2**:
+\\[ A_{12} = \\begin{bmatrix} 4 & 6 \\\\ 7 & 9 \\end{bmatrix} \\]<br>
+<b>Fitur Komputasi Lengkap:</b> Ketik <code>submatriks(A)</code> untuk melihat daftar lengkap seluruh variasi submatriks.`
+            },
+            {
+                keywords: ['transpose', 'transpos'],
+                answer: `<b>Transpose Matriks</b><br><br>
+<b>Penjelasan Verbal Lanjutan:</b><br>
+Transpose matriks $A$ (dinotasikan $A^T$ atau $A'$) diperoleh dengan mengubah baris menjadi kolom dan kolom menjadi baris ($a_{ij} \\to a_{ji}$).<br><br>
+<b>Contoh Soal Konkret:</b><br>
+Diberikan matriks $A$ berukuran $2 \\times 3$:
+\\[ A = \\begin{bmatrix} 1 & 2 & 3 \\\\ 4 & 5 & 6 \\end{bmatrix} \\]<br>
+Transpose matriks $A$ ($A^T$) berukuran $3 \\times 2$:
+\\[ A^T = \\begin{bmatrix} 1 & 4 \\\\ 2 & 5 \\\\ 3 & 6 \\end{bmatrix} \\]`
+            },
+            {
+                keywords: ['obe', 'operasi baris elementer'],
+                answer: `<b>Operasi Baris Elementer (OBE)</b><br><br>
+<b>Penjelasan Verbal Lanjutan:</b><br>
+OBE adalah kumpulan langkah manipulasi baris pada matriks untuk mencari invers, menyelesaikan SPL, atau mengubah matriks ke bentuk eselon baris.<br><br>
+<b>3 Jenis Operasi Dasar OBE & Contoh Notasi:</b><br>
+1. **Menukar dua baris:** $R_1 \\leftrightarrow R_2$<br>
+2. **Mengalikan baris dengan skalar $k \\neq 0$:** $k R_i \\to R_i$<br>
+3. **Menambahkan kelipatan suatu baris ke baris lain:** $R_2 + k R_1 \\to R_2$<br><br>
+<b>Contoh Langkah OBE Sederhana:</b><br>
+Ubah baris ke-2 matriks $\\begin{bmatrix} 1 & 2 \\\\ 3 & 8 \\end{bmatrix}$ agar elemen di bawah angka 1 menjadi 0 dengan $R_2 - 3R_1 \\to R_2$:
+\\[ \\begin{bmatrix} 1 & 2 \\\\ 3 - 3(1) & 8 - 3(2) \\end{bmatrix} = \\begin{bmatrix} 1 & 2 \\\\ 0 & 2 \\end{bmatrix} \\]`
+            },
+            {
+                keywords: ['eselon baris tereduksi', 'rref', 'eselon baris'],
+                answer: `<b>Bentuk Eselon Baris Tereduksi (RREF)</b><br><br>
+<b>Penjelasan Verbal Lanjutan:</b><br>
+Matriks berada dalam bentuk RREF jika:<br>
+1. Elemen tidak nol pertama pada setiap baris adalah angka 1 (*1 utama*).<br>
+2. *1 utama* pada baris yang lebih bawah terletak lebih ke kanan.<br>
+3. Pada kolom yang memuat *1 utama*, semua elemen lain di atas dan bawahnya bernilai 0.<br>
+4. Baris yang seluruh elemennya nol berada di paling bawah.<br><br>
+<b>Contoh Konkret Matriks RREF:</b>
+\\[ \\text{RREF} = \\begin{bmatrix} 1 & 0 & 0 & 4 \\\\ 0 & 1 & 0 & -1 \\\\ 0 & 0 & 1 & 2 \\end{bmatrix} \\]`
+            }
+        ];
+
+        function findConcept(text) {
+            const normalized = normalize(text);
+            let sortedConcepts = [];
+            conceptData.forEach(item => {
+                item.keywords.forEach(kw => {
+                    sortedConcepts.push({ keyword: kw, answer: item.answer });
+                });
+            });
+            sortedConcepts.sort((a, b) => b.keyword.length - a.keyword.length);
+
+            for (const item of sortedConcepts) {
+                if (normalized.includes(normalize(item.keyword))) {
+                    return item.answer;
+                }
+            }
+            return null;
+        }
+
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const matrixVars = {};
+
+        function addMessage(text, sender, isLatex = false, isError = false, hasCopyButton = false) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message ' + sender;
+            if (hasCopyButton) {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'concept-card';
+                cardDiv.innerHTML = text;
+
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'concept-copy-btn';
+                copyBtn.textContent = ' Copy';
+                copyBtn.onclick = function() {
+                    navigator.clipboard.writeText(cardDiv.innerText).then(() => {
+                        copyBtn.textContent = ' Copied!';
+                        copyBtn.classList.add('copied');
+                        setTimeout(() => {
+                            copyBtn.textContent = ' Copy';
+                            copyBtn.classList.remove('copied');
+                        }, 1500);
+                    });
+                };
+                cardDiv.appendChild(copyBtn);
+                msgDiv.appendChild(cardDiv);
+            } else if (isLatex) {
+                const latexDiv = document.createElement('div');
+                latexDiv.className = 'latex-block';
+                latexDiv.innerHTML = text;
+                msgDiv.appendChild(latexDiv);
+            } else {
+                msgDiv.innerHTML = text.replace(/\n/g, '<br>');
+            }
+            if (isError) msgDiv.classList.add('error');
+            chatContainer.appendChild(msgDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            if (window.MathJax) {
+                MathJax.typesetPromise([msgDiv]).catch(() => {});
+            }
+        }
+
+        function botReply(text, isLatex = false, isError = false, hasCopy = false) {
+            addMessage(text, 'bot', isLatex, isError, hasCopy);
+        }
+
+        function userReply(text) {
+            addMessage(text, 'user', false, false);
+        }
+
+        function toLatex(value) {
+            if (typeof value === 'number') return String(value);
+            if (Array.isArray(value) && isMatrix(value)) {
+                let latex = '\\begin{bmatrix}';
+                for (let i = 0; i < value.length; i++) {
+                    latex += value[i].join(' & ');
+                    if (i < value.length - 1) latex += ' \\\\ ';
+                }
+                latex += '\\end{bmatrix}';
+                return latex;
+            }
+            return String(value);
+        }
+
+        function renderSubmatrixResult(res) {
+            let html = `<b>Analisis Submatriks Lengkap</b><br><br>`;
+            html += `<b>Ukuran Matriks Asal:</b> ${res.totalRows} � ${res.totalCols}<br>`;
+            html += `<b>Rumus Banyaknya Submatriks:</b> \\((2^m - 1)(2^n - 1) = (2^{${res.totalRows}} - 1)(2^{${res.totalCols}} - 1)\\)<br>`;
+            html += `<b>Total Submatriks yang Mungkin:</b> <b style="color:#2b5a8a; font-size:16px;">${res.count}</b> submatriks.<br><br>`;
+            html += `<b>Daftar Semua Submatriks:</b>`;
+            
+            html += `<div class="submatrix-list">`;
+            res.list.forEach((item, idx) => {
+                html += `<div class="submatrix-item">`;
+                html += `<b>#${idx + 1}</b> (Baris [${item.rows.join(',')}], Kolom [${item.cols.join(',')}])<br>`;
+                html += `\\[ ${toLatex(item.matrix)} \\]`;
+                html += `</div>`;
+            });
+            html += `</div>`;
+            
+            return html;
+        }
+
+        function renderLUResult(luRes) {
+            let html = `<b>Hasil Dekomposisi Matriks A = LU</b><br><br>`;
+            html += `<b>1. Matriks Segitiga Bawah (L - Lower):</b><br>`;
+            html += `\\[ L = ${toLatex(luRes.L)} \\]<br>`;
+            html += `<b>2. Matriks Segitiga Atas (U - Upper):</b><br>`;
+            html += `\\[ U = ${toLatex(luRes.U)} \\]<br>`;
+            html += `<b>3. Verifikasi Perkalian (L � U):</b><br>`;
+            const LU_prod = matrixMul(luRes.L, luRes.U);
+            html += `\\[ L \\cdot U = ${toLatex(luRes.L)} ${toLatex(luRes.U)} = ${toLatex(LU_prod)} \\]`;
+            return html;
+        }
+
+        function processUserInput(input) {
+            const trimmed = input.trim();
+            if (!trimmed) return;
+            userReply(trimmed);
+
+            if (/^(help|bantuan|\?)$/i.test(trimmed)) {
+                botReply('<b>Panduan Perintah Chatbot Matriks:</b><br><br>' +
+                         '<b>1. Menyimpan Matriks:</b><br><code>A = [[2,1],[8,7]]</code><br><br>' +
+                         '<b>2. Operasi Perhitungan:</b><br>' +
+                         '� <code>lu(A)</code> � Dekomposisi Matriks A = LU<br>' +
+                         '� <code>submatriks(A)</code> � Analisis seluruh submatriks<br>' +
+                         '� <code>det(A)</code>, <code>inv(A)</code>, <code>rank(A)</code>, <code>ref(A)</code>, <code>rref(A)</code>, <code>adj(A)</code>, <code>A\'</code><br><br>' +
+                         '<b>3. Teori & Sifat Lengkap:</b><br>Ketik <code>dekomposisi lu</code>, <code>idempotent</code>, <code>simetri</code>, <code>simetri miring</code>, <code>hermitian</code>, <code>matriks partisi</code>, <code>sifat determinan</code>, <code>sifat invers</code>, dll.', false);
+                return;
+            }
+
+            const match = trimmed.match(/^\s*([a-zA-Z_]\w*)\s*=\s*(.+)$/);
+            if (match) {
+                try {
+                    const value = parseAndEvaluate(match[2].trim(), matrixVars);
+                    matrixVars[match[1]] = value;
+                    botReply('Matriks <b>' + match[1] + '</b> disimpan.<br>\\[ ' + toLatex(value) + ' \\]', true);
+                } catch (e) {
+                    botReply('Gagal: ' + e.message, false, true);
+                }
+                return;
+            }
+
+            let exprToEval = trimmed;
+            if (/^(rank|ref|rref|det|inv|adj|normal|submatriks|lu)$/i.test(trimmed)) {
+                if (matrixVars['A']) {
+                    exprToEval = trimmed + '(A)';
+                }
+            }
+
+            try {
+                const result = parseAndEvaluate(exprToEval, matrixVars);
+                if (typeof result === 'object' && result.isLU) {
+                    botReply(renderLUResult(result), true, false, true);
+                    return;
+                } else if (typeof result === 'object' && result.count !== undefined) {
+                    botReply(renderSubmatrixResult(result), true, false, true);
+                    return;
+                } else if (typeof result === 'object' && isMatrix(result)) {
+                    botReply('Hasil:<br>\\[ ' + toLatex(result) + ' \\]', true);
+                    return;
+                } else if (typeof result === 'number') {
+                    botReply('Hasil: <b>' + result + '</b>', false);
+                    return;
+                }
+            } catch (e) {}
+
+            const conceptAnswer = findConcept(trimmed);
+            if (conceptAnswer) {
+                botReply(conceptAnswer, true, false, true);
+                return;
+            }
+
+            botReply('Perintah tidak dikenali. Ketik <b>help</b> untuk melihat panduan lengkap.', false, true);
+        }
+
+        sendBtn.addEventListener('click', () => {
+            const text = userInput.value.trim();
+            if (text) {
+                processUserInput(text);
+                userInput.value = '';
+                userInput.style.height = 'auto';
+            }
+        });
+
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendBtn.click();
+            }
+        });
+
+        window.insertExample = function(text) {
+            userInput.value = text;
+            userInput.focus();
+        };
+
+        botReply('<b>Selamat datang di Chatbot Aljabar Matriks!</b><br><br>' +
+                 'Fitur Baru & Konsep Lengkap dengan Contoh Soal:<br>' +
+                 '� Perintah <code>lu(A)</code> untuk Dekomposisi Matriks $A = LU$.<br>' +
+                 '� Contoh soal + pengerjaan lengkap untuk semua konsep (Aturan Cramer, Invers, LU, dll).<br>' +
+                 '� Perintah <code>submatriks(A)</code> untuk analisis submatriks.<br><br>' +
+                 'Ketik <b>help</b> untuk panduan lengkap.', false);
+    </script>
+</body>
+</html>
